@@ -1,0 +1,6 @@
+@Fallout_Follies_HostAddress = http://localhost:5197
+
+GET {{Fallout_Follies_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
