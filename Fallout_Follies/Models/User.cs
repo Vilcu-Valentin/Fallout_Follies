@@ -2,5 +2,6 @@
 
 public class ApplicationUser : IdentityUser
 {
-    // You can add additional properties specific to your application here
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
 }
