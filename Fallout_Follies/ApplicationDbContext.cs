@@ -19,7 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<Product>()
             .Property(p => p.Price)
-            .HasColumnType("decimal(18, 2)"); // Example: 18 total digits, 2 after the decimal
+            .HasColumnType("decimal(18, 2)");
     }
 
 }
