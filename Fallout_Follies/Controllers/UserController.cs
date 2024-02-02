@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles ="Admin")]
 public class UserController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -13,6 +16,43 @@ public class UserController : ControllerBase
         _userManager = userManager;
         _roleManager = roleManager;
     }
+
+    // GET: api/User
+    [HttpGet]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = _userManager.Users.ToList().Select(user => new UserDetailsDto
+        {
+            Email = user.Email,
+            UserName = user.UserName,
+            // Map other properties as needed
+        });
+
+        return Ok(users);
+    }
+
+
+    // GET: api/User/{email}
+    [HttpGet("{email}")]
+    public async Task<IActionResult> GetUser(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return NotFound("User not found.");
+        }
+
+        // Assuming you have a DTO to return user details
+        var userDto = new UserDetailsDto
+        {
+            Email = user.Email,
+            UserName = user.UserName,
+            // Map other properties as needed
+        };
+
+        return Ok(userDto);
+    }
+
 
     // POST: api/User
     [HttpPost]
@@ -83,5 +123,22 @@ public class UserController : ControllerBase
         return Ok();
     }
 
-    // Implement other CRUD operations (Get, Delete) as needed
+    // DELETE: api/User/{email}
+    [HttpDelete("{email}")]
+    public async Task<IActionResult> DeleteUser(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return NotFound("User not found.");
+        }
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+        {
+            return BadRequest(result.Errors);
+        }
+
+        return Ok($"User {email} deleted successfully.");
+    }
 }
