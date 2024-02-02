@@ -1,61 +1,87 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
 public class UserController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
-    public UserController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
+    public UserController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
-        _signInManager = signInManager;
         _roleManager = roleManager;
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register(UserRegisterDto model)
+    // POST: api/User
+    [HttpPost]
+    public async Task<IActionResult> CreateUser(UserRegisterDto model)
     {
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FirstName = model.FirstName, LastName = model.LastName };
         var result = await _userManager.CreateAsync(user, model.Password);
 
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            await _userManager.AddToRoleAsync(user, "User"); // Default role
-            return Ok();
+            return BadRequest(result.Errors);
         }
-        return BadRequest(result.Errors);
+
+        await _userManager.AddToRoleAsync(user, "User");
+
+        return Ok();
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login(UserLoginDto model)
+    // PUT: api/User/{email}
+    [HttpPut("{email}")]
+    public async Task<IActionResult> UpdateUser(string email, UserUpdateDto model)
     {
-        var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
-        if (result.Succeeded)
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
         {
-            return Ok();
+            return NotFound();
         }
-        return Unauthorized();
+
+        // Update the user properties
+        user.Email = model.Email;
+        // Set other properties
+
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(result.Errors);
+        }
+
+        return NoContent();
     }
 
-    [HttpPost("assign-role")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> AssignRole(UserRoleDto model)
+    // POST: api/User/ChangeRole
+    [HttpPost("ChangeRole")]
+    public async Task<IActionResult> ChangeUserRole(UserRoleDto model)
     {
         var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null) return NotFound("User not found");
-
-        var result = await _userManager.AddToRoleAsync(user, model.RoleName);
-        if (result.Succeeded)
+        if (user == null)
         {
-            return Ok();
+            return NotFound("User not found.");
         }
 
-        return BadRequest(result.Errors);
+        var currentRoles = await _userManager.GetRolesAsync(user);
+        var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+
+        if (!removeResult.Succeeded)
+        {
+            return BadRequest(removeResult.Errors);
+        }
+
+        var addResult = await _userManager.AddToRoleAsync(user, model.RoleName);
+
+        if (!addResult.Succeeded)
+        {
+            return BadRequest(addResult.Errors);
+        }
+
+        return Ok();
     }
 
+    // Implement other CRUD operations (Get, Delete) as needed
 }
