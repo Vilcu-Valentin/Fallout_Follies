@@ -15,7 +15,6 @@ public class ProductsController : ControllerBase
 
     // GET: api/products
     [HttpGet]
-    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
     {
         return await _context.Products.ToListAsync();

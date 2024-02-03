@@ -1,4 +1,5 @@
 ﻿using Fallout_Follies.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,12 +15,14 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
     {
         return Ok(await _orderRepository.GetAllOrdersAsync());
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<Order>> GetOrder(int id)
     {
         var order = await _orderRepository.GetOrderByIdAsync(id);
@@ -30,13 +33,34 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Order>> PostOrder(Order order)
+    [Authorize]
+    public async Task<ActionResult<Order>> PostOrder([FromBody] OrderDto orderDto)
     {
+        var order = new Order
+        {
+            UserId = orderDto.UserId,
+        };
+
         var createdOrder = await _orderRepository.CreateOrderAsync(order);
+
+        foreach (var itemDto in orderDto.OrderItems)
+        {
+            var orderItem = new OrderItem
+            {
+                OrderId = createdOrder.Id,
+                ProductId = itemDto.ProductId,
+                Quantity = itemDto.Quantity,
+            };
+
+            await _orderRepository.CreateOrderItemAsync(orderItem);
+        }
+
         return CreatedAtAction(nameof(GetOrder), new { id = createdOrder.Id }, createdOrder);
     }
 
+
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> PutOrder(int id, Order order)
     {
         if (id != order.Id) return BadRequest();
@@ -55,6 +79,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteOrder(int id)
     {
         await _orderRepository.DeleteOrderAsync(id);

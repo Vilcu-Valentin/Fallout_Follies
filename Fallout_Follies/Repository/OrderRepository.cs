@@ -28,6 +28,13 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
+    public async Task<OrderItem> CreateOrderItemAsync(OrderItem orderItem)
+    {
+        _context.OrderItems.Add(orderItem);
+        await _context.SaveChangesAsync();
+        return orderItem;
+    }
+
     public async Task UpdateOrderAsync(Order order)
     {
         _context.Entry(order).State = EntityState.Modified;
