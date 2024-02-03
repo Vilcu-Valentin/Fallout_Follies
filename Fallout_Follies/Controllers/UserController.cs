@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles ="Admin")]
 public class UserController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -19,6 +18,7 @@ public class UserController : ControllerBase
 
     // GET: api/User
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllUsers()
     {
         var users = _userManager.Users.ToList().Select(user => new UserDetailsDto
@@ -32,17 +32,17 @@ public class UserController : ControllerBase
     }
 
 
-    // GET: api/User/{email}
-    [HttpGet("{email}")]
-    public async Task<IActionResult> GetUser(string email)
+    // GET: api/User/{id}
+    [HttpGet("{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetUserById(string id)
     {
-        var user = await _userManager.FindByEmailAsync(email);
+        var user = await _userManager.FindByIdAsync(id);
         if (user == null)
         {
             return NotFound("User not found.");
         }
 
-        // Assuming you have a DTO to return user details
         var userDto = new UserDetailsDto
         {
             Email = user.Email,
@@ -56,6 +56,7 @@ public class UserController : ControllerBase
 
     // POST: api/User
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser(UserRegisterDto model)
     {
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FirstName = model.FirstName, LastName = model.LastName };
@@ -73,6 +74,7 @@ public class UserController : ControllerBase
 
     // PUT: api/User/{email}
     [HttpPut("{email}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateUser(string email, UserUpdateDto model)
     {
         var user = await _userManager.FindByEmailAsync(email);
@@ -97,6 +99,7 @@ public class UserController : ControllerBase
 
     // POST: api/User/ChangeRole
     [HttpPost("ChangeRole")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ChangeUserRole(UserRoleDto model)
     {
         var user = await _userManager.FindByEmailAsync(model.Email);
@@ -125,6 +128,7 @@ public class UserController : ControllerBase
 
     // DELETE: api/User/{email}
     [HttpDelete("{email}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteUser(string email)
     {
         var user = await _userManager.FindByEmailAsync(email);
