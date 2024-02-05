@@ -21,16 +21,23 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllUsers()
     {
-        var users = _userManager.Users.ToList().Select(user => new UserDetailsDto
+        var users = await _userManager.Users.ToListAsync();
+        var userDtos = new List<UserDetailsDto>();
+
+        foreach (var user in users)
         {
-            Email = user.Email,
-            UserName = user.UserName,
-            // Map other properties as needed
-        });
+            var roles = await _userManager.GetRolesAsync(user); 
+            userDtos.Add(new UserDetailsDto
+            {
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles.ToList() 
+            });
+        }
 
-        return Ok(users);
+        return Ok(userDtos);
     }
-
 
     // GET: api/User/{id}
     [HttpGet("{id}")]
@@ -43,15 +50,19 @@ public class UserController : ControllerBase
             return NotFound("User not found.");
         }
 
+        var roles = await _userManager.GetRolesAsync(user); // Get the roles for the specific user
+
         var userDto = new UserDetailsDto
         {
             Email = user.Email,
-            UserName = user.UserName,
-            // Map other properties as needed
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Roles = roles.ToList()
         };
 
         return Ok(userDto);
     }
+
 
 
     // POST: api/User
@@ -143,6 +154,7 @@ public class UserController : ControllerBase
             return BadRequest(result.Errors);
         }
 
-        return Ok($"User {email} deleted successfully.");
+        return Ok(new { message = $"User {email} deleted successfully." });
+
     }
 }
